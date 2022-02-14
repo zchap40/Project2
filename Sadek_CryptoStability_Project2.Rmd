@@ -1,14 +1,100 @@
 ---
-title: "R Notebook"
+title: "NYCDSA Project2 - The Impact of Cryptocurrency on Global Economic Stability"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+Generate plot of cryptocurrency market capitalisation since April 2020. I have only been able to obtain data for Bitcoin (not yet for other currencies).
 
 ```{r}
-plot(cars)
+
+library(Quandl)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(tidyquant)
+library(patchwork)
+
+Mktcp_Start = "2020-04-01"
+Mktcp_End = "2022-02-11"
+
+Bitcoin_Mktcp = Quandl("BCHAIN/MKTCP", start_date=Mktcp_Start, end_date=Mktcp_End)
+
+SPY = tq_get('^GSPC',
+             from = Mktcp_Start,
+             to = Mktcp_End,
+             get = "stock.prices"
+             )
+
+Bitcoin_Mktcp_Scaled = Bitcoin_Mktcp
+
+SPY.df = data.frame(SPY$date, SPY$close)
+
+head(SPY.df)
+
+Bitcoin_Mktcp_Scaled$Value = Bitcoin_Mktcp_Scaled$Value / 1E12
+
+Bitcoin_Mktcp_Scaled = merge(Bitcoin_Mktcp_Scaled, SPY.df, by.x = "Date", by.y = "SPY.date")
+
+head(Bitcoin_Mktcp_Scaled)
+
+coeff = 5000
+cols = c("S&P500"="red","Bitcoin (BTC)"="#00AFBB")
+ggplot(Bitcoin_Mktcp_Scaled, aes(x=Date)) + 
+  geom_area(aes(y = Value, fill = "Bitcoin (BTC)"), 
+            colour = "#00AFBB", alpha=0.5) + 
+  labs(title="Cryptocurrency Market Capitalisation",
+        x ="Date", y = "Bitcoin Market Capitalisation \n (US$ trillion)") +
+  theme(axis.text = element_text(face="bold")) +
+  theme(axis.title = element_text(face="bold")) +
+  theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+  geom_line(aes(y=SPY.close / coeff, colour = "S&P500"), linetype = "solid") +
+  scale_colour_manual(name = '', values=cols, 
+                      guide = guide_legend(override.aes=aes(fill=NA))) +
+  scale_fill_manual(values=cols, guide="none") +
+  scale_y_continuous(
+    sec.axis = sec_axis(~.*coeff, name="S&P500, Price (US$)")
+  ) + 
+  theme(
+    legend.position = c(.3, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(6, 6, 6, 6)
+    )
+  
+ggsave("fig1.png")
+
+
+#p2 <- ggplot(Bitcoin_Mktcp_Scaled, aes(x=Date, y=SPY.close)) +
+#  geom_line(color="red",size=2) #+
+#  ggtitle("Price: range 1-100") +
+#  theme_ipsum()
+#p1 + p2
+
+#df = Bitcoin_Mktcp_Scaled %>%
+#  select(Date, Value) %>%
+#  gather(key = "variable", value = "value", -Date)
+#ggplot(Bitcoin_Mktcp_Scaled, aes(x = Date, y = Value)) + 
+#  geom_area(aes(color = variable, fill = variable), 
+#            alpha = 0.5, position = position_dodge(0.8)) +
+#  scale_color_manual(values = c("#00AFBB")) +
+#  scale_fill_manual(values = c("#00AFBB")) +
+#  labs(title="Plot of length \n by dose",
+#        x ="Dose (mg)", y = "Teeth length", fill = "Dose (mg)")
+
+#, "#E7B800"
+#, "#E7B800"
+#mydata = Quandl("FRED/GDP", type="raw")
+
+#mydata = Quandl("FRED/GDP", start_date="2001-12-31", end_date="2005-12-31")
+
+#mydata = Quandl(c("FRED/GDP.1", "WIKI/AAPL.4"))
+
+#Quandl("BCHAIN/MKTCP")
+
+#Quandl("FRED/TEDRATE")
+
+
+
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
@@ -18,6 +104,32 @@ When you save the notebook, an HTML file containing the code and output will be 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 
 ```{r}
+library(Quandl)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(tidyquant)
+library(patchwork)
+
+Vol_Start = "2012-01-01"
+Vol_End = "2022-02-11"
+
+tickers1 = c('^GSPC', '^IXIC', '^GDAXI', '^FTSE', '^N225', '^DJI',
+             'BTC-USD', 'ETH-USD', 'BNB-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD')
+
+Vol_Prices = tq_get(tickers1,
+             from = Vol_Start,
+             to = Vol_End,
+             get = "stock.prices"
+             )
+
+Vol_Prices_D = subset(Vol_Prices, select=-c(open, high, low, close, volume))
+
+
+head(Vol_Prices_D)
+
+#diff(log(prices)) 
+
 
 ```
 
